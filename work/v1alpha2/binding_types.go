@@ -150,7 +150,7 @@ type ResourceBindingSpec struct {
 	// Suspension declares the policy for suspending different aspects of propagation.
 	// nil means no suspension. no default values.
 	// +optional
-	Suspension *Suspension `json:"suspension,omitempty"`
+	Suspension *policyv1alpha1.Suspension `json:"suspension,omitempty"`
 
 	// PreserveResourcesOnDeletion controls whether resources should be preserved on the
 	// member clusters when the binding object is deleted.
@@ -159,10 +159,6 @@ type ResourceBindingSpec struct {
 	// This setting applies to all Work objects created under this binding object.
 	// +optional
 	PreserveResourcesOnDeletion *bool `json:"preserveResourcesOnDeletion,omitempty"`
-
-	// SchedulePriority represents the scheduling priority assigned to workloads.
-	// +optional
-	SchedulePriority *SchedulePriority `json:"schedulePriority,omitempty"`
 }
 
 // ObjectReference contains enough information to locate the referenced object inside current cluster.
@@ -244,13 +240,6 @@ type GracefulEvictionTask struct {
 	// +required
 	FromCluster string `json:"fromCluster"`
 
-	// PurgeMode represents how to deal with the legacy applications on the
-	// cluster from which the application is migrated.
-	// Valid options are "Immediately", "Graciously" and "Never".
-	// +kubebuilder:validation:Enum=Immediately;Graciously;Never
-	// +optional
-	PurgeMode policyv1alpha1.PurgeMode `json:"purgeMode,omitempty"`
-
 	// Replicas indicates the number of replicas should be evicted.
 	// Should be ignored for resource type that doesn't have replica.
 	// +optional
@@ -291,11 +280,6 @@ type GracefulEvictionTask struct {
 	// +optional
 	SuppressDeletion *bool `json:"suppressDeletion,omitempty"`
 
-	// PreservedLabelState represents the application state information collected from the original cluster,
-	// and it will be injected into the new cluster in form of application labels.
-	// +optional
-	PreservedLabelState map[string]string `json:"preservedLabelState,omitempty"`
-
 	// CreationTimestamp is a timestamp representing the server time when this object was
 	// created.
 	// Clients should not set this value to avoid the time inconsistency issue.
@@ -304,9 +288,6 @@ type GracefulEvictionTask struct {
 	// Populated by the system. Read-only.
 	// +optional
 	CreationTimestamp *metav1.Time `json:"creationTimestamp,omitempty"`
-
-	// ClustersBeforeFailover records the clusters where running the application before failover.
-	ClustersBeforeFailover []string `json:"clustersBeforeFailover,omitempty"`
 }
 
 // BindingSnapshot is a snapshot of a ResourceBinding or ClusterResourceBinding.
@@ -324,31 +305,6 @@ type BindingSnapshot struct {
 	// Clusters represents the scheduled result.
 	// +optional
 	Clusters []TargetCluster `json:"clusters,omitempty"`
-}
-
-// Suspension defines the policy for suspending dispatching and scheduling.
-type Suspension struct {
-	policyv1alpha1.Suspension `json:",inline"`
-
-	// Scheduling controls whether scheduling should be suspended, the scheduler will pause scheduling and not
-	// process resource binding when the value is true and resume scheduling when it's false or nil.
-	// This is designed for third-party systems to temporarily pause the scheduling of applications, which enabling
-	// manage resource allocation, prioritize critical workloads, etc.
-	// It is expected that third-party systems use an admission webhook to suspend scheduling at the time of
-	// ResourceBinding creation. Once a ResourceBinding has been scheduled, it cannot be paused afterward, as it may
-	// lead to ineffective suspension.
-	// +optional
-	Scheduling *bool `json:"scheduling,omitempty"`
-}
-
-// SchedulePriority represents the scheduling priority assigned to workloads.
-type SchedulePriority struct {
-	// Priority specifies the scheduling priority for the binding.
-	// Higher values indicate a higher priority.
-	// If not explicitly set, the default value is 0.
-	// +kubebuilder:default=0
-	// +optional
-	Priority int32 `json:"priority,omitempty"`
 }
 
 // ResourceBindingStatus represents the overall status of the strategy as well as the referenced resources.

@@ -1,8 +1,12 @@
 reviewers:
-- calvin0327
 - chaunceyjiang
+- Garrybest
+- kevin-wangzefeng
 - RainbowMango
+- whitewindmills
+- XiShanYongYe-Chang
 approvers:
-- calvin0327
-- chaunceyjiang
+- kevin-wangzefeng
 - RainbowMango
+options:
+  no_parent_owners: true

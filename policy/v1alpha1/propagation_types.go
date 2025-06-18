@@ -200,23 +200,6 @@ type PropagationSpec struct {
 	//
 	// +optional
 	PreserveResourcesOnDeletion *bool `json:"preserveResourcesOnDeletion,omitempty"`
-
-	// SchedulePriority defines how Karmada should resolve the priority and preemption policy
-	// for workload scheduling.
-	//
-	// This setting is useful for controlling the scheduling behavior of offline workloads.
-	// By setting a higher or lower priority, users can control which workloads are scheduled first.
-	// Additionally, it allows specifying a preemption policy where higher-priority workloads can
-	// preempt lower-priority ones in scenarios of resource contention.
-	//
-	// Note: This feature is currently in the alpha stage. The priority-based scheduling functionality is
-	// controlled by the PriorityBasedScheduling feature gate, and preemption is controlled by the
-	// PriorityBasedPreemptiveScheduling feature gate. Currently, only priority-based scheduling is
-	// supported. Preemption functionality is not yet available and will be introduced in future
-	// releases as the feature matures.
-	//
-	// +optional
-	SchedulePriority *SchedulePriority `json:"schedulePriority,omitempty"`
 }
 
 // ResourceSelector the resources will be selected.
@@ -276,19 +259,13 @@ type SuspendClusters struct {
 	ClusterNames []string `json:"clusterNames,omitempty"`
 }
 
-// PurgeMode represents how to deal with the legacy application on the
+// PurgeMode represents that how to deal with the legacy applications on the
 // cluster from which the application is migrated.
 type PurgeMode string
 
 const (
 	// Immediately represents that Karmada will immediately evict the legacy
-	// application. This is useful in scenarios where an application can not
-	// tolerate two instances running simultaneously.
-	// For example, the Flink application supports exactly-once state consistency,
-	// which means it requires that no two instances of the application are running
-	// at the same time. During a failover, it is crucial to ensure that the old
-	// application is removed before creating a new one to avoid duplicate
-	// processing and maintaining state consistency.
+	// application.
 	Immediately PurgeMode = "Immediately"
 	// Graciously represents that Karmada will wait for the application to
 	// come back to healthy on the new cluster or after a timeout is reached
@@ -341,23 +318,6 @@ type ApplicationFailoverBehavior struct {
 	// Value must be positive integer.
 	// +optional
 	GracePeriodSeconds *int32 `json:"gracePeriodSeconds,omitempty"`
-
-	// StatePreservation defines the policy for preserving and restoring state data
-	// during failover events for stateful applications.
-	//
-	// When an application fails over from one cluster to another, this policy enables
-	// the extraction of critical data from the original resource configuration.
-	// Upon successful migration, the extracted data is then re-injected into the new
-	// resource, ensuring that the application can resume operation with its previous
-	// state intact.
-	// This is particularly useful for stateful applications where maintaining data
-	// consistency across failover events is crucial.
-	// If not specified, means no state data will be preserved.
-	//
-	// Note: This requires the StatefulFailoverInjection feature gate to be enabled,
-	// which is alpha.
-	// +optional
-	StatePreservation *StatePreservation `json:"statePreservation,omitempty"`
 }
 
 // DecisionConditions represents the decision conditions of performing the failover process.
@@ -369,41 +329,6 @@ type DecisionConditions struct {
 	// +kubebuilder:default=300
 	// +optional
 	TolerationSeconds *int32 `json:"tolerationSeconds,omitempty"`
-}
-
-// StatePreservation defines the policy for preserving state during failover events.
-type StatePreservation struct {
-	// Rules contains a list of StatePreservationRule configurations.
-	// Each rule specifies a JSONPath expression targeting specific pieces of
-	// state data to be preserved during failover events. An AliasLabelName is associated
-	// with each rule, serving as a label key when the preserved data is passed
-	// to the new cluster.
-	// +required
-	Rules []StatePreservationRule `json:"rules"`
-}
-
-// StatePreservationRule defines a single rule for state preservation.
-// It includes a JSONPath expression and an alias name that will be used
-// as a label key when passing state information to the new cluster.
-type StatePreservationRule struct {
-	// AliasLabelName is the name that will be used as a label key when the preserved
-	// data is passed to the new cluster. This facilitates the injection of the
-	// preserved state back into the application resources during recovery.
-	// +required
-	AliasLabelName string `json:"aliasLabelName"`
-
-	// JSONPath is the JSONPath template used to identify the state data
-	// to be preserved from the original resource configuration.
-	// The JSONPath syntax follows the Kubernetes specification:
-	// https://kubernetes.io/docs/reference/kubectl/jsonpath/
-	//
-	// Note: The JSONPath expression will start searching from the "status" field of
-	// the API resource object by default. For example, to extract the "availableReplicas"
-	// from a Deployment, the JSONPath expression should be "{.availableReplicas}", not
-	// "{.status.availableReplicas}".
-	//
-	// +required
-	JSONPath string `json:"jsonPath"`
 }
 
 // Placement represents the rule for select clusters.
@@ -675,54 +600,6 @@ const (
 	// in other words, the resource template will not be propagated as per the current propagation rules until
 	// there is an update on it.
 	LazyActivation ActivationPreference = "Lazy"
-)
-
-// SchedulePriority defines how Karmada should resolve the priority and preemption policy
-// for workload scheduling.
-type SchedulePriority struct {
-	// PriorityClassSource specifies where Karmada should look for the PriorityClass definition.
-	// Available options:
-	// - KubePriorityClass: Uses Kubernetes PriorityClass (scheduling.k8s.io/v1)
-	// - PodPriorityClass: Uses PriorityClassName from PodTemplate: PodSpec.PriorityClassName (not yet implemented)
-	// - FederatedPriorityClass: Uses Karmada FederatedPriorityClass (not yet implemented)
-	//
-	// +kubebuilder:validation:Enum=KubePriorityClass
-	// +required
-	PriorityClassSource PriorityClassSource `json:"priorityClassSource"`
-
-	// PriorityClassName specifies which PriorityClass to use. Its behavior depends on PriorityClassSource:
-	//
-	// Behavior of PriorityClassName:
-	//
-	// For KubePriorityClass:
-	// - When specified: Uses the named Kubernetes PriorityClass.
-	//
-	// For PodPriorityClass:
-	// - Uses PriorityClassName from the PodTemplate.
-	// - Not yet implemented.
-	//
-	// For FederatedPriorityClass:
-	// - Not yet implemented.
-	//
-	// +required
-	PriorityClassName string `json:"priorityClassName"`
-}
-
-// PriorityClassSource defines the type for PriorityClassSource field.
-type PriorityClassSource string
-
-const (
-	// FederatedPriorityClass specifies to use Karmada FederatedPriorityClass for priority resolution.
-	// This feature is planned for future releases and is currently not implemented.
-	FederatedPriorityClass PriorityClassSource = "FederatedPriorityClass"
-
-	// KubePriorityClass specifies to use Kubernetes native PriorityClass (scheduling.k8s.io/v1)
-	// for priority resolution. This is the default source.
-	KubePriorityClass PriorityClassSource = "KubePriorityClass"
-
-	// PodPriorityClass specifies to use the PriorityClassName defined in the workload's
-	// PodTemplate for priority resolution.
-	PodPriorityClass PriorityClassSource = "PodPriorityClass"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
