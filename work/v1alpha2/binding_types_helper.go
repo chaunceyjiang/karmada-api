@@ -16,18 +16,13 @@ limitations under the License.
 
 package v1alpha2
 
-import policyv1alpha1 "github.com/karmada-io/api/policy/v1alpha1"
-
 // TaskOptions represents options for GracefulEvictionTasks.
 type TaskOptions struct {
-	purgeMode              policyv1alpha1.PurgeMode
-	producer               string
-	reason                 string
-	message                string
-	gracePeriodSeconds     *int32
-	suppressDeletion       *bool
-	preservedLabelState    map[string]string
-	clustersBeforeFailover []string
+	producer           string
+	reason             string
+	message            string
+	gracePeriodSeconds *int32
+	suppressDeletion   *bool
 }
 
 // Option configures a TaskOptions
@@ -41,13 +36,6 @@ func NewTaskOptions(opts ...Option) *TaskOptions {
 	}
 
 	return &options
-}
-
-// WithPurgeMode sets the purgeMode for TaskOptions
-func WithPurgeMode(purgeMode policyv1alpha1.PurgeMode) Option {
-	return func(o *TaskOptions) {
-		o.purgeMode = purgeMode
-	}
 }
 
 // WithProducer sets the producer for TaskOptions
@@ -82,20 +70,6 @@ func WithGracePeriodSeconds(gracePeriodSeconds *int32) Option {
 func WithSuppressDeletion(suppressDeletion *bool) Option {
 	return func(o *TaskOptions) {
 		o.suppressDeletion = suppressDeletion
-	}
-}
-
-// WithPreservedLabelState sets the preservedLabelState for TaskOptions
-func WithPreservedLabelState(preservedLabelState map[string]string) Option {
-	return func(o *TaskOptions) {
-		o.preservedLabelState = preservedLabelState
-	}
-}
-
-// WithClustersBeforeFailover sets the clustersBeforeFailover for TaskOptions
-func WithClustersBeforeFailover(clustersBeforeFailover []string) Option {
-	return func(o *TaskOptions) {
-		o.clustersBeforeFailover = clustersBeforeFailover
 	}
 }
 
@@ -179,37 +153,15 @@ func (s *ResourceBindingSpec) GracefulEvictCluster(name string, options *TaskOpt
 	// build eviction task
 	evictingCluster := evictCluster.DeepCopy()
 	evictionTask := GracefulEvictionTask{
-		FromCluster:            evictingCluster.Name,
-		PurgeMode:              options.purgeMode,
-		Reason:                 options.reason,
-		Message:                options.message,
-		Producer:               options.producer,
-		GracePeriodSeconds:     options.gracePeriodSeconds,
-		SuppressDeletion:       options.suppressDeletion,
-		PreservedLabelState:    options.preservedLabelState,
-		ClustersBeforeFailover: options.clustersBeforeFailover,
+		FromCluster:        evictingCluster.Name,
+		Reason:             options.reason,
+		Message:            options.message,
+		Producer:           options.producer,
+		GracePeriodSeconds: options.gracePeriodSeconds,
+		SuppressDeletion:   options.suppressDeletion,
 	}
 	if evictingCluster.Replicas > 0 {
 		evictionTask.Replicas = &evictingCluster.Replicas
 	}
 	s.GracefulEvictionTasks = append(s.GracefulEvictionTasks, evictionTask)
-}
-
-// SchedulingSuspended tells if the scheduling of ResourceBinding or
-// ClusterResourceBinding is suspended.
-func (s *ResourceBindingSpec) SchedulingSuspended() bool {
-	if s == nil || s.Suspension == nil || s.Suspension.Scheduling == nil {
-		return false
-	}
-
-	return *s.Suspension.Scheduling
-}
-
-// SchedulePriorityValue returns the scheduling priority declared
-// by '.spec.SchedulePriority.Priority'.
-func (s *ResourceBindingSpec) SchedulePriorityValue() int32 {
-	if s.SchedulePriority == nil {
-		return 0
-	}
-	return s.SchedulePriority.Priority
 }

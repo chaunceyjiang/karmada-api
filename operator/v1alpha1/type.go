@@ -113,26 +113,6 @@ type KarmadaSpec struct {
 	// By default, the operator will only attempt to download the tarball if it's not yet present in the local cache.
 	// +optional
 	CRDTarball *CRDTarball `json:"crdTarball,omitempty"`
-
-	// CustomCertificate specifies the configuration to customize the certificates
-	// for Karmada components or control the certificate generation process, such as
-	// the algorithm, validity period, etc.
-	// Currently, it only supports customizing the CA certificate for limited components.
-	// +optional
-	CustomCertificate *CustomCertificate `json:"customCertificate,omitempty"`
-}
-
-// CustomCertificate holds the configuration for generating the certificate.
-type CustomCertificate struct {
-	// APIServerCACert references a Kubernetes secret containing the CA certificate
-	// for component karmada-apiserver.
-	// The secret must contain the following data keys:
-	// - tls.crt: The TLS certificate.
-	// - tls.key: The TLS private key.
-	// If specified, this CA will be used to issue client certificates for
-	// all components that access the APIServer as clients.
-	// +optional
-	APIServerCACert *LocalSecretReference `json:"apiServerCACert,omitempty"`
 }
 
 // ImageRegistry represents an image registry as well as the
@@ -297,12 +277,8 @@ type KarmadaAPIServer struct {
 	// +optional
 	ServiceSubnet *string `json:"serviceSubnet,omitempty"`
 
-	// ServiceType represents the service type of Karmada API server.
-	// Valid options are: "ClusterIP", "NodePort", "LoadBalancer".
-	// Defaults to "ClusterIP".
-	//
-	// +kubebuilder:default="ClusterIP"
-	// +kubebuilder:validation:Enum=ClusterIP;NodePort;LoadBalancer
+	// ServiceType represents the service type of karmada apiserver.
+	// it is ClusterIP by default.
 	// +optional
 	ServiceType corev1.ServiceType `json:"serviceType,omitempty"`
 
@@ -353,12 +329,6 @@ type KarmadaAPIServer struct {
 	// More info: https://kubernetes.io/docs/reference/command-line-tools-reference/kube-apiserver/
 	// +optional
 	FeatureGates map[string]bool `json:"featureGates,omitempty"`
-
-	// SidecarContainers specifies a list of sidecar containers to be deployed
-	// within the Karmada API server pod.
-	// This enables users to integrate auxiliary services such as KMS plugins for configuring encryption at rest.
-	// +optional
-	SidecarContainers []corev1.Container `json:"sidecarContainers,omitempty"`
 }
 
 // KarmadaAggregatedAPIServer holds settings to karmada-aggregated-apiserver component of the karmada.
@@ -654,12 +624,6 @@ type CommonSettings struct {
 	// More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
 	// +optional
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
-
-	// PriorityClassName specifies the priority class name for the component.
-	// If not specified, it defaults to "system-node-critical".
-	// +kubebuilder:default="system-node-critical"
-	// +optional
-	PriorityClassName string `json:"priorityClassName,omitempty"`
 }
 
 // Image allows to customize the image used for components.
@@ -726,21 +690,6 @@ type KarmadaStatus struct {
 	// Conditions represents the latest available observations of a karmada's current state.
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
-
-	// APIServerService reports the location of the Karmada API server service which
-	// can be used by third-party applications to discover the Karmada Service, e.g.
-	// expose the service outside the cluster by Ingress.
-	// +optional
-	APIServerService *APIServerService `json:"apiServerService,omitempty"`
-}
-
-// APIServerService tells the location of Karmada API server service.
-// Currently, it only includes the name of the service. The namespace
-// of the service is the same as the namespace of the current Karmada object.
-type APIServerService struct {
-	// Name represents the name of the Karmada API Server service.
-	// +required
-	Name string `json:"name"`
 }
 
 // LocalSecretReference is a reference to a secret within the enclosing
